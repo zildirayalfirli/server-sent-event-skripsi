@@ -18,6 +18,8 @@ import { WarningBroadcast } from './controllers/warningController.js'
 import { WaveHeightBroadcast } from './controllers/waveheightController.js'
 import { WeatherBroadcast } from './controllers/weatherController.js'
 import { WindBroadcast } from './controllers/windController.js'
+import streamRoute from './routes/streamRoute.js'
+import { broadcast } from './controllers/streamController.js'
 
 dotenv.config()
 
@@ -27,25 +29,27 @@ const PORT = process.env.PORT || 9000
 app.use(cors())
 app.use(express.json())
 
-app.use('/api', humidityRoute)
-app.use('/api', surfacepressureRoute)
-app.use('/api', temperatureRoute)
-app.use('/api', tideheightRoute)
-app.use('/api', warningRoute)
-app.use('/api', waveheightRoute)
-app.use('/api', weatherRoute)
-app.use('/api', windRoute)
+// app.use('/api', humidityRoute)
+// app.use('/api', surfacepressureRoute)
+// app.use('/api', temperatureRoute)
+// app.use('/api', tideheightRoute)
+// app.use('/api', warningRoute)
+// app.use('/api', waveheightRoute)
+// app.use('/api', weatherRoute)
+// app.use('/api', windRoute)
+app.use('/', streamRoute)
 
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`)
   })
-    SurfacePressureBroadcast()
-    HumidityBroadcast()
-    TemperatureBroadcast()
-    TideHeightBroadcast()
-    WarningBroadcast()
-    WaveHeightBroadcast()
-    WeatherBroadcast()
-    WindBroadcast()
+  // SurfacePressureBroadcast()
+  // HumidityBroadcast()
+  // TemperatureBroadcast()
+  // TideHeightBroadcast()
+  // WarningBroadcast()
+  // WaveHeightBroadcast()
+  // WeatherBroadcast()
+  // WindBroadcast()
+  broadcast()
 })

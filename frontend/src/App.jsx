@@ -7,19 +7,21 @@ import WarningStream from './component/warningStream.jsx'
 import WaveHeightStream from './component/waveheightStream.jsx'
 import WeatherStream from './component/weatherStream.jsx'
 import WindStream from './component/windStream.jsx'
+import Stream from './component/Stream.jsx'
 
 const App = () => {
   return (
     <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
       <h1>🌤 Streaming Dashboard Via SSE</h1>
       {/* <HumidityStream /> */}
-      <SurfacePressureStream />
+      {/* <SurfacePressureStream /> */}
       {/* <TemperatureStream /> */}
-      <TideHeightStream />
+      {/* <TideHeightStream />
       <WarningStream />
       <WaveHeightStream />
       <WeatherStream />
-      <WindStream />
+      <WindStream /> */}
+      <Stream />
     </div>
   )
 }
