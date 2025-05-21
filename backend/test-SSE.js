@@ -1,7 +1,7 @@
-const EventSource = require('eventsource');
+import EventSource from 'eventsource';
 
 const TOTAL_CLIENTS = 100;
-const URL = 'http://localhost:3001/sse';
+const URL = 'http://147.93.81.243:9000';
 
 let totalEvents = 0;
 let firstLatencies = [];
@@ -14,11 +14,22 @@ console.log(`🚀 Starting ${TOTAL_CLIENTS} SSE clients...`);
 for (let i = 0; i < TOTAL_CLIENTS; i++) {
   const es = new EventSource(URL);
 
+  let disconnectTimeout = setTimeout(() => {
+    console.warn(`[Client ${i}] No message received in 5s, closing connection.`);
+    es.close();
+  }, 5000);
+
   es.onopen = () => {
     startTimes[i] = Date.now();
   };
 
   es.onmessage = (e) => {
+    clearTimeout(disconnectTimeout);
+    disconnectTimeout = setTimeout(() => {
+      console.warn(`[Client ${i}] No message received in 5s after last message, closing connection.`);
+      es.close();
+    }, 5000);
+
     try {
       const now = Date.now();
       const data = JSON.parse(e.data);
@@ -42,6 +53,7 @@ for (let i = 0; i < TOTAL_CLIENTS; i++) {
   es.onerror = (err) => {
     console.error(`[Client ${i}] Connection error:`, err.message);
     es.close();
+    clearTimeout(disconnectTimeout);
   };
 }
 
@@ -55,4 +67,3 @@ setTimeout(() => {
   console.log(`⚡ Throughput       : ${(totalEvents / 30).toFixed(2)} msg/sec`);
   process.exit(0);
 }, 30000);
-

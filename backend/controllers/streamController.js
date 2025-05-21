@@ -40,11 +40,25 @@ export const broadcast = () => {
             Wind.find(),
         ])
 
-        const payload = `data: ${JSON.stringify({ humidity, temperature, surfacePressure, tideHeight, warning, waveHeight, weather, wind })}\n\n`
-        clients.forEach(client => client.write(payload))
+            const nowISO = new Date().toISOString();
+
+            const payloadData = {
+                sent_at: nowISO,
+                humidity,
+                temperature,
+                surfacePressure,
+                tideHeight,
+                warning,
+                waveHeight,
+                weather,
+                wind
+            }
+
+            const payload = `data: ${JSON.stringify(payloadData)}\n\n`
+            clients.forEach(client => client.write(payload))
         } catch (err) {
-        const errorPayload = `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`
-        clients.forEach(client => client.write(errorPayload))
+            const errorPayload = `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`
+            clients.forEach(client => client.write(errorPayload))
         }
     }, 5000)
 }
