@@ -60,7 +60,7 @@ services:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/data:/var/lib/grafana
-    user: "1000"
+    user: "0"
     depends_on:
       - prometheus
     ports:
