@@ -15,35 +15,40 @@ export const Stream = (req, res) => {
     res.setHeader('Connection', 'keep-alive')
     res.write('retry: 10000\n\n')
 
-    clients.push(res)
-    console.log(`🟢 client connected (${clients.length})`)
+    let timeoutId = setTimeout(() => {
+        res.end()
+    }, 30000)
+
+    clients.push({ res, timeoutId })
 
     req.on('close', () => {
-    const index = clients.indexOf(res)
-    if (index !== -1) clients.splice(index, 1)
-    console.log(`🔴 client disconnected (${clients.length})`)
-    res.end()
+        const index = clients.findIndex(c => c.res === res)
+        if (index !== -1) {
+            clearTimeout(clients[index].timeoutId)
+            clients.splice(index, 1)
+        }
+        res.end()
     })
 }
 
 export const broadcast = () => {
     setInterval(async () => {
         try {
-        const [humidity, temperature, surfacePressure, tideHeight, warning, waveHeight, weather, wind] = await Promise.all([
-            Humidity.find(),
-            Temperature.find(),
-            SurfacePressure.find(),
-            TideHeight.find(),
-            Warning.find(),
-            WaveHeight.find(),
-            Weather.find(),
-            Wind.find(),
-        ])
+            const [humidity, temperature, surfacePressure, tideHeight, warning, waveHeight, weather, wind] = await Promise.all([
+                Humidity.find().sort({ Timestamp: -1 }).limit(10),
+                Temperature.find().sort({ Timestamp: -1 }).limit(10),
+                SurfacePressure.find().sort({ Timestamp: -1 }).limit(10),
+                TideHeight.find().sort({ Timestamp: -1 }).limit(10),
+                Warning.find().sort({ Timestamp: -1 }).limit(10),
+                WaveHeight.find().sort({ Timestamp: -1 }).limit(10),
+                Weather.find().sort({ Timestamp: -1 }).limit(10),
+                Wind.find().sort({ Timestamp: -1 }).limit(10),
+            ])
 
-            const nowISO = new Date().toISOString();
+            const nowTimestamp = Date.now()
 
             const payloadData = {
-                sent_at: nowISO,
+                sent_at: nowTimestamp,
                 humidity,
                 temperature,
                 surfacePressure,
@@ -55,10 +60,20 @@ export const broadcast = () => {
             }
 
             const payload = `data: ${JSON.stringify(payloadData)}\n\n`
-            clients.forEach(client => client.write(payload))
+
+            clients.forEach(client => {
+                client.res.write(payload)
+
+                clearTimeout(client.timeoutId)
+                client.timeoutId = setTimeout(() => {
+                    client.res.end()
+                }, 30000)
+            })
+
+        console.log(`📡 Broadcast completed at ${new Date(nowTimestamp).toISOString()} to ${clients.length} clients`)
         } catch (err) {
             const errorPayload = `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`
-            clients.forEach(client => client.write(errorPayload))
+            clients.forEach(client => client.res.write(errorPayload))
         }
     }, 5000)
 }

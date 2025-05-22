@@ -1,7 +1,7 @@
 import EventSource from 'eventsource';
 
 const TOTAL_CLIENTS = 100;
-const URL = 'http://147.93.81.243:9000';
+const URL = 'http://localhost:9000';
 
 let totalEvents = 0;
 let firstLatencies = [];
@@ -14,21 +14,21 @@ console.log(`🚀 Starting ${TOTAL_CLIENTS} SSE clients...`);
 for (let i = 0; i < TOTAL_CLIENTS; i++) {
   const es = new EventSource(URL);
 
-  let disconnectTimeout = setTimeout(() => {
-    console.warn(`[Client ${i}] No message received in 5s, closing connection.`);
+  let inactivityTimer = setTimeout(() => {
+    console.warn(`[Client ${i}] ❌ No message received in 5s, closing connection.`);
     es.close();
-  }, 5000);
+  }, 30000);
 
   es.onopen = () => {
     startTimes[i] = Date.now();
   };
 
   es.onmessage = (e) => {
-    clearTimeout(disconnectTimeout);
-    disconnectTimeout = setTimeout(() => {
-      console.warn(`[Client ${i}] No message received in 5s after last message, closing connection.`);
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      console.warn(`[Client ${i}] ❌ No message received in 5s after last message, closing connection.`);
       es.close();
-    }, 5000);
+    }, 30000);
 
     try {
       const now = Date.now();
@@ -43,17 +43,17 @@ for (let i = 0; i < TOTAL_CLIENTS; i++) {
         const responseTime = now - startTimes[i];
         firstLatencies.push(latency);
         firstResponseTimes.push(responseTime);
-        console.log(`[Client ${i}] Latency: ${latency}ms | Response Time: ${responseTime}ms`);
+        console.log(`[Client ${i}] ✅ Latency: ${latency}ms | Response Time: ${responseTime}ms`);
       }
     } catch (err) {
-      console.error(`JSON error (client ${i}):`, err.message);
+      console.error(`⚠️ JSON error (client ${i}):`, err.message);
     }
   };
 
   es.onerror = (err) => {
-    console.error(`[Client ${i}] Connection error:`, err.message);
+    console.error(`[Client ${i}] 🔴 Connection error:`, err.message);
     es.close();
-    clearTimeout(disconnectTimeout);
+    clearTimeout(inactivityTimer);
   };
 }
 
