@@ -1,9 +1,9 @@
 import EventSource from 'eventsource';
 
-const TOTAL_CLIENTS = 5000;
+const TOTAL_CLIENTS = 10000;
 const URL = 'http://147.93.81.243/api/';
 const RECONNECT_DELAY_MS = 100;
-const INACTIVITY_TIMEOUT_MS = 60000;
+const INACTIVITY_TIMEOUT_MS = 180000;
 const TEST_DURATION_MS = 1800000;
 
 const CLIENTS_PER_BATCH = 100;
