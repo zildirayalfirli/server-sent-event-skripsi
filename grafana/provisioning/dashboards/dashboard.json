@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 5,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -900,7 +900,10 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 41,
-  "tags": [],
+  "tags": [
+    "docker",
+    "cAdvisor"
+  ],
   "templating": {
     "list": [
       {
@@ -966,5 +969,5 @@
   "timezone": "",
   "title": "SSE Container Monitoring",
   "uid": "5a45edb8-aa13-4e0f-b339-66f3dae82512",
-  "version": 8
+  "version": 1
 }
