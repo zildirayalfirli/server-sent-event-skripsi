@@ -44,15 +44,16 @@ export const broadcast = () => {
             const nowTimestamp = Date.now()
 
             const payloadData = {
-                sent_at: nowTimestamp,
-                humidity,
-                temperature,
-                surfacePressure,
-                tideHeight,
-                warning,
-                waveHeight,
-                weather,
-                wind
+            type: 'all',
+            sent_at: nowTimestamp,
+            humidity,
+            temperature,
+            surfacePressure,
+            tideHeight,
+            warning,
+            waveHeight,
+            weather,
+            wind
             }
 
             const payload = `data: ${JSON.stringify(payloadData)}\n\n`
@@ -71,7 +72,7 @@ export const broadcast = () => {
             })
             clients.splice(0, clients.length, ...activeClients);
 
-            console.log(`📡 [Broadcast PID:${currentPid}] completed at ${new Date(nowTimestamp).toISOString()} to ${clients.length} clients`);
+            console.log(`📤 [PID ${process.pid}] Broadcasted to ${clients.length} clients at ${new Date(nowTimestamp).toISOString()}`);
         } catch (err) {
             console.error(`[Broadcast PID:${currentPid}] Error during broadcast cycle: ${err.message}`, err.stack);
             const errorPayload = `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`
