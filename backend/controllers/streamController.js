@@ -1,89 +1,97 @@
-import Humidity from '../models/humidity.js'
-import Temperature from '../models/temperature.js'
-import SurfacePressure from '../models/surfacePressure.js'
-import TideHeight from '../models/tideHeight.js'
-import Warning from '../models/warning.js'
-import WaveHeight from '../models/waveHeight.js'
-import Weather from '../models/weather.js'
-import Wind from '../models/wind.js'
+import Humidity from '../models/humidity.js';
+import Temperature from '../models/temperature.js';
+import SurfacePressure from '../models/surfacePressure.js';
+import TideHeight from '../models/tideHeight.js';
+import Warning from '../models/warning.js';
+import WaveHeight from '../models/waveHeight.js';
+import Weather from '../models/weather.js';
+import Wind from '../models/wind.js';
 
-const clients = []
+const clients = [];
 
 export const Stream = (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream')
-    res.setHeader('Cache-Control', 'no-cache')
-    res.setHeader('Connection', 'keep-alive')
-    res.write('retry: 10000\n\n')
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Content-Encoding', 'identity');
+  res.flushHeaders?.();
+  res.write('retry: 10000\n\n');
 
-    clients.push({ res })
+  const client = { res };
+  clients.push(client);
 
-    req.on('close', () => {
-        const index = clients.findIndex(c => c.res === res)
-        if (index !== -1) {
-            clients.splice(index, 1)
-            console.log(`Client disconnected. Remaining clients: ${clients.length}`);
-        }
-    })
-}
+  res.write(': connected\n\n');
+
+  req.on('close', () => {
+    const index = clients.indexOf(client);
+    if (index !== -1) clients.splice(index, 1);
+    console.log(`❌ Client disconnected. Remaining: ${clients.length}`);
+  });
+};
+
+setInterval(() => {
+  for (const client of clients) {
+    try {
+      client.res.write(': keep-alive\n\n');
+    } catch (err) {}
+  }
+}, 15000);
 
 export const broadcast = () => {
-    setInterval(async () => {
-        const currentPid = process.pid;
+  setInterval(async () => {
+    if (clients.length === 0) return;
+
+    const currentPid = process.pid;
+    try {
+        const [humidity, temperature, surfacePressure, tideHeight, warning, waveHeight, weather, wind] = await Promise.all([
+            Humidity.find().limit(10),
+            Temperature.find().limit(10),
+            SurfacePressure.find().limit(10),
+            TideHeight.find().limit(10),
+            Warning.find().limit(10),
+            WaveHeight.find().limit(10),
+            Weather.find().limit(10),
+            Wind.find().limit(10),
+        ]);
+
+      const now = Date.now();
+      const payload = {
+        type: 'all',
+        sent_at: now,
+        humidity,
+        temperature,
+        surfacePressure,
+        tideHeight,
+        warning,
+        waveHeight,
+        weather,
+        wind
+      };
+
+      const stringPayload = `data: ${JSON.stringify(payload)}\n\n`;
+
+    for (const client of [...clients]) {
         try {
-            const [humidity, temperature, surfacePressure, tideHeight, warning, waveHeight, weather, wind] = await Promise.all([
-                Humidity.find().limit(10),
-                Temperature.find().limit(10),
-                SurfacePressure.find().limit(10),
-                TideHeight.find().limit(10),
-                Warning.find().limit(10),
-                WaveHeight.find().limit(10),
-                Weather.find().limit(10),
-                Wind.find().limit(10),
-            ])
-
-            const nowTimestamp = Date.now()
-
-            const payloadData = {
-            type: 'all',
-            sent_at: nowTimestamp,
-            humidity,
-            temperature,
-            surfacePressure,
-            tideHeight,
-            warning,
-            waveHeight,
-            weather,
-            wind
-            }
-
-            const payload = `data: ${JSON.stringify(payloadData)}\n\n`
-
-            const activeClients = []
-            clients.forEach(client => {
-                try {
-                    if (client.res.writableEnded === false) {
-                        client.res.write(payload)
-                        activeClients.push(client)
-                    } else {
-                    }
-                } catch (error) {
-                    console.error(`[Broadcast PID:${currentPid}] Error writing to client (likely disconnected): ${error.message}`);
-                }
-            })
-            clients.splice(0, clients.length, ...activeClients);
-
-            console.log(`📤 [PID ${process.pid}] Broadcasted to ${clients.length} clients at ${new Date(nowTimestamp).toISOString()}`);
+          if (!client.res.writableEnded) {
+            client.res.write(stringPayload);
+          }
         } catch (err) {
-            console.error(`[Broadcast PID:${currentPid}] Error during broadcast cycle: ${err.message}`, err.stack);
-            const errorPayload = `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`
-            clients.forEach(client => {
-                try {
-                    if (client.res.writableEnded === false) {
-                        client.res.write(errorPayload)
-                    }
-                } catch (writeErr) {
-                }
-            })
+          console.warn(`[SSE] Failed to write to client: ${err.message}`);
         }
-    }, 5000)
-}
+      }
+
+
+      console.log(`📤 [PID ${currentPid}] Broadcast to ${clients.length} clients at ${new Date(now).toISOString()}`);
+    } catch (err) {
+      console.error(`[Broadcast PID:${process.pid}] ❌ Error during broadcast: ${err.message}`);
+      const errorPayload = `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`;
+      for (const client of clients) {
+        try {
+          if (!client.res.writableEnded) {
+            client.res.write(errorPayload);
+          }
+        } catch {}
+      }
+    }
+  }, 5000);
+};
